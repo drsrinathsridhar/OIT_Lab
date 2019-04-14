@@ -1,31 +1,30 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "Hidden/SDP/Init" {
-	Properties {
-		_Color ("Color Tint", Color) = (1, 1, 1, 1)
-		_MainTex ("Main Tex", 2D) = "white" {}
-		_BumpMap ("Normal Map", 2D) = "bump" {}
+﻿Shader "Hidden/SDP/Init" 
+{
+	Properties 
+	{
 		_NormalizationFactor("Normalization Factor", float) = 1.0
 	}
-	SubShader {
-		Tags {"Queue"="Geometry" "IgnoreProjector"="True" "RenderType"="Opaque" "DisableBatching " = "True" }
-		
-		Pass {
-			Tags { "LightMode"="ForwardBase" }
 
-			Cull Off
+
+	SubShader 
+	{
+		Tags 
+		{
+			"RenderType" = "Opaque"
+			"DisableBatching " = "True"
+		}
+		
+		Pass 
+		{
 			ZWrite On
+			Cull Off
 			Lighting Off
-			
+
 			CGPROGRAM
-#pragma vertex vert
-#pragma fragment frag
-#include "UnityCG.cginc"
-			
-			fixed4 _Color;
-			sampler2D _MainTex;
-			float4 _MainTex_ST;
-			sampler2D _BumpMap;
+			#pragma vertex vert
+			#pragma fragment frag
+			#include "UnityCG.cginc"
+
 			float _NormalizationFactor;
 			
 			struct a2v 
@@ -40,7 +39,7 @@ Shader "Hidden/SDP/Init" {
 			{
 				float4 pos : SV_POSITION;
 				float4 NOCSPos : TEXCOORD1;
-				float depth : TEXCOORD3;
+				float depth : TEXCOORD2;
 			};
 
 			struct PixelOutput 
@@ -74,14 +73,14 @@ Shader "Hidden/SDP/Init" {
 				i.NOCSPos /= 2.0;
 	#endif
 
-				if (i.NOCSPos[0] > 1.0 || i.NOCSPos[1] > 1.0 || i.NOCSPos[2] > 1.0
-					|| i.NOCSPos[0] < 0.0 || i.NOCSPos[1] < 0.0 || i.NOCSPos[2] < 0.0)
-				{
-					i.NOCSPos[0] = 1.0;
-					i.NOCSPos[1] = 1.0;
-					i.NOCSPos[2] = 1.0;
-					i.NOCSPos[3] = 0.0;
-				}
+				//if (i.NOCSPos[0] > 1.0 || i.NOCSPos[1] > 1.0 || i.NOCSPos[2] > 1.0
+				//	|| i.NOCSPos[0] < 0.0 || i.NOCSPos[1] < 0.0 || i.NOCSPos[2] < 0.0)
+				//{
+				//	i.NOCSPos[0] = 1.0;
+				//	i.NOCSPos[1] = 1.0;
+				//	i.NOCSPos[2] = 1.0;
+				//	i.NOCSPos[3] = 0.0;
+				//}
 
 				PixelOutput o;
 				o.col = i.NOCSPos;
@@ -92,5 +91,5 @@ Shader "Hidden/SDP/Init" {
 			ENDCG
 		}
 	}
-	FallBack "Diffuse/VertexLit"
+	FallBack "Diffuse"
 }

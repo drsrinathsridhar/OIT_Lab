@@ -71,14 +71,22 @@ public class SpecialDP : MonoBehaviour
             return;
         }
 
+        m_opaqueTex = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         m_depthTexs[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         m_depthTexs[1] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         RenderTexture[] colorTexs = new RenderTexture[layers];
         colorTexs[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
-        //m_transparentCamera.cullingMask = ~(1 << LayerMask.NameToLayer("Transparent"));
 
-        //Shader.SetGlobalFloat("_NormalizationFactor", 1.0f);
+        Shader.SetGlobalFloat("_NormalizationFactor", 1.0f);
+        // First render all opaque objects
+        m_transparentCamera.targetTexture = m_opaqueTex;
+        m_transparentCamera.backgroundColor = m_camera.backgroundColor;
+        m_transparentCamera.clearFlags = m_camera.clearFlags;
+        m_transparentCamera.cullingMask = ~(1 << LayerMask.NameToLayer("Transparent"));
+        m_transparentCamera.Render();
+
+        Shader.SetGlobalFloat("_NormalizationFactor", 1.0f);
         // First iteration to render the scene as normal
         RenderBuffer[] mrtBuffers = new RenderBuffer[2];
         mrtBuffers[0] = colorTexs[0].colorBuffer;
@@ -89,12 +97,13 @@ public class SpecialDP : MonoBehaviour
         m_transparentCamera.cullingMask = 1 << LayerMask.NameToLayer("Transparent");
         m_transparentCamera.RenderWithShader(initializationShader, null);
 
-        Graphics.Blit(colorTexs[0], dst);
-        return;
+        //Graphics.Blit(colorTexs[0], dst);
+        //return;
 
         // Peel away the depth
         for (int i = 1; i < layers; i++)
         {
+            Shader.SetGlobalFloat("_NormalizationFactor", 1.0f);
             colorTexs[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             mrtBuffers[0] = colorTexs[i].colorBuffer;
             mrtBuffers[1] = m_depthTexs[i % 2].colorBuffer;

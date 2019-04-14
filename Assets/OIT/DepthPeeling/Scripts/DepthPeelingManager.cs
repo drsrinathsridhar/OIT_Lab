@@ -4,7 +4,8 @@ using UnityEngine.Rendering;
 
 [ExecuteInEditMode]
 [RequireComponent(typeof(Camera))]
-public class DepthPeelingManager : MonoBehaviour {
+public class DepthPeelingManager : MonoBehaviour
+{
 
     public enum TransparentMode { ODT = 0, DepthPeeling }
 
@@ -26,10 +27,12 @@ public class DepthPeelingManager : MonoBehaviour {
     private Material m_blendMat = null;
     #endregion
 
-	// Use this for initialization
-    void Awake () {
+    // Use this for initialization
+    void Awake()
+    {
         m_camera = GetComponent<Camera>();
-        if (m_transparentCameraObj != null) {
+        if (m_transparentCameraObj != null)
+        {
             DestroyImmediate(m_transparentCameraObj);
         }
         m_transparentCameraObj = new GameObject("OITCamera");
@@ -44,27 +47,36 @@ public class DepthPeelingManager : MonoBehaviour {
         m_depthTexs = new RenderTexture[2];
         m_blendMat = new Material(blendShader);
         m_blendMat.hideFlags = HideFlags.DontSave;
-	}
+    }
 
-    void OnDestroy() {
+    void OnDestroy()
+    {
         DestroyImmediate(m_transparentCameraObj);
     }
 
-    void OnPreRender() {
-        if (transparentMode == TransparentMode.ODT) {
+    void OnPreRender()
+    {
+        if (transparentMode == TransparentMode.ODT)
+        {
             // Just render everything as normal
             m_camera.cullingMask = -1;
-        } else {
+        }
+        else
+        {
             // The main camera shouldn't render anything
             // Everything is rendered in procedural
             m_camera.cullingMask = 0;
         }
     }
 
-    void OnRenderImage(RenderTexture src, RenderTexture dst) {
-        if (transparentMode == TransparentMode.ODT) {
+    void OnRenderImage(RenderTexture src, RenderTexture dst)
+    {
+        if (transparentMode == TransparentMode.ODT)
+        {
             Graphics.Blit(src, dst);
-        } else {
+        }
+        else
+        {
             m_opaqueTex = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             m_depthTexs[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             m_depthTexs[1] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
@@ -89,21 +101,23 @@ public class DepthPeelingManager : MonoBehaviour {
             m_transparentCamera.RenderWithShader(initializationShader, null);
 
             // Peel away the depth
-            for (int i = 1; i < layers; i++) {
+            for (int i = 1; i < layers; i++)
+            {
                 colorTexs[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
                 mrtBuffers[0] = colorTexs[i].colorBuffer;
-                mrtBuffers[1] = m_depthTexs[i%2].colorBuffer;
+                mrtBuffers[1] = m_depthTexs[i % 2].colorBuffer;
                 m_transparentCamera.SetTargetBuffers(mrtBuffers, m_opaqueTex.depthBuffer);
                 m_transparentCamera.backgroundColor = new Color(1.0f, 1.0f, 1.0f, 0.0f);
                 m_transparentCamera.cullingMask = 1 << LayerMask.NameToLayer("Transparent");
-                Shader.SetGlobalTexture("_PrevDepthTex", m_depthTexs[1 - i%2]);
+                Shader.SetGlobalTexture("_PrevDepthTex", m_depthTexs[1 - i % 2]);
                 m_transparentCamera.RenderWithShader(depthPeelingShader, null);
             }
 
             // Blend all the layers
             RenderTexture colorAccumTex = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             Graphics.Blit(m_opaqueTex, colorAccumTex);
-            for (int i = layers - 1; i >= 0; i--) {
+            for (int i = layers - 1; i >= 0; i--)
+            {
                 RenderTexture tmpAccumTex = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
                 m_blendMat.SetTexture("_LayerTex", colorTexs[i]);
                 Graphics.Blit(colorAccumTex, tmpAccumTex, m_blendMat, 1);
@@ -117,7 +131,8 @@ public class DepthPeelingManager : MonoBehaviour {
             RenderTexture.ReleaseTemporary(m_opaqueTex);
             RenderTexture.ReleaseTemporary(m_depthTexs[0]);
             RenderTexture.ReleaseTemporary(m_depthTexs[1]);
-            for (int i = 0; i < layers; i++) {
+            for (int i = 0; i < layers; i++)
+            {
                 RenderTexture.ReleaseTemporary(colorTexs[i]);
             }
         }
