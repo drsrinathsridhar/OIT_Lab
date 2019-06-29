@@ -21,7 +21,6 @@ public class SpecialDP : MonoBehaviour
     private Camera m_camera = null;
     private Camera m_transparentCamera = null;
     private GameObject m_transparentCameraObj = null;
-    private RenderTexture m_opaqueTex = null;
     private RenderTexture[] m_depthTexs = null;
     #endregion
 
@@ -70,20 +69,24 @@ public class SpecialDP : MonoBehaviour
             return;
         }
 
-        m_opaqueTex = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        Shader.SetGlobalFloat("_NormalizationFactor", 1.0f);
+        var dummy = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         m_depthTexs[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         m_depthTexs[1] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
         RenderTexture[] colorTexs = new RenderTexture[layers];
         colorTexs[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
+        m_transparentCamera.backgroundColor = new Color(1.0f, 1.0f, 1.0f, 0.0f);
+
         // First iteration to render the scene as normal
         RenderBuffer[] mrtBuffers = new RenderBuffer[2];
         mrtBuffers[0] = colorTexs[0].colorBuffer;
         mrtBuffers[1] = m_depthTexs[0].colorBuffer;
-        m_transparentCamera.SetTargetBuffers(mrtBuffers, m_opaqueTex.depthBuffer);
-        m_transparentCamera.backgroundColor = new Color(1.0f, 1.0f, 1.0f, 0.0f);
+        m_transparentCamera.SetTargetBuffers(mrtBuffers, dummy.depthBuffer);
         m_transparentCamera.clearFlags = CameraClearFlags.Color;
         m_transparentCamera.RenderWithShader(initializationShader, null);
+
+        //Graphics.Blit(m_depthTexs[0], dst);
 
         // Then, peel away the depth
         for (int i = 1; i < layers; i++)
@@ -91,15 +94,14 @@ public class SpecialDP : MonoBehaviour
             colorTexs[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             mrtBuffers[0] = colorTexs[i].colorBuffer;
             mrtBuffers[1] = m_depthTexs[i % 2].colorBuffer;
-            m_transparentCamera.SetTargetBuffers(mrtBuffers, m_opaqueTex.depthBuffer);
-            m_transparentCamera.backgroundColor = new Color(1.0f, 1.0f, 1.0f, 0.0f);
+            m_transparentCamera.SetTargetBuffers(mrtBuffers, dummy.depthBuffer);
             Shader.SetGlobalTexture("_PrevDepthTex", m_depthTexs[1 - i % 2]);
             m_transparentCamera.RenderWithShader(depthPeelingShader, null);
         }
 
         Graphics.Blit(colorTexs[dispLayer], dst);
 
-        RenderTexture.ReleaseTemporary(m_opaqueTex);
+        RenderTexture.ReleaseTemporary(dummy);
         RenderTexture.ReleaseTemporary(m_depthTexs[0]);
         RenderTexture.ReleaseTemporary(m_depthTexs[1]);
         for (int i = 0; i < layers; i++)
